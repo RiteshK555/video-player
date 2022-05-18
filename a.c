@@ -23,7 +23,16 @@ int main(int argc,char **argv){
     }
     //print some info present in the context
     //arguments 1.context 2.index of stream to dump info abt 3.url of file 4.whether context is input or output
-    av_dump_format(pFormatCtx,0,filename,0);
+    //av_dump_format(pFormatCtx,0,filename,0);
     
-
+    //iterating through streams
+    int videoStream = -1;AVCodecContext *pCodecCtxOrig=NULL,*pCodecCtx=NULL;
+    for(int i=0;i<pFormatCtx->nb_streams;i++){
+        if(pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO){
+            videoStream = i;
+            break;
+        }
+    }
+    if(videoStream == -1)return -1;
+    pCodecCtx = pFormatCtx->streams[videoStream]->codec;
 }
