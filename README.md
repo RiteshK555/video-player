@@ -3,6 +3,7 @@
 the file
 ## codec
 encoding and decoding
-## muxing and demuxing
+## muxing
 combining the subtitles, video, audio(inputs) into container.
+## demuxing
 seperating container into metadata.
