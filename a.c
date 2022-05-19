@@ -3,6 +3,7 @@
 //multiplexing and demultiplexing data
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
+#include "libavutil/imgutils.h"
 int main(int argc,char **argv){
     //structure pointer
     AVFormatContext *pFormatCtx = NULL;
@@ -26,7 +27,7 @@ int main(int argc,char **argv){
     //av_dump_format(pFormatCtx,0,filename,0);
     
     //iterating through streams
-    int videoStream = -1;AVCodecContext *pCodecCtxOrig=NULL,*pCodecCtx=NULL;
+    int videoStream = -1;AVCodecParameters *pCodecParOrig=NULL,*pCodecPar=NULL;
     for(int i=0;i<pFormatCtx->nb_streams;i++){
         if(pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO){
             videoStream = i;
@@ -34,5 +35,55 @@ int main(int argc,char **argv){
         }
     }
     if(videoStream == -1)return -1;
-    pCodecCtx = pFormatCtx->streams[videoStream]->codec;
+    pCodecPar = pFormatCtx->streams[videoStream]->codecpar;
+
+    //decoder using codec id
+    AVCodec *pDec = avcodec_find_decoder(pCodecPar->codec_id);
+    if(pDec==NULL){
+        //fprintf used to output file data
+        fprinf(stderr,"unsupported codec\n"); 
+        return -1;
+    }
+    //decoder context
+    //sets the decoder context feilds to codec specified defaults
+    AVCodecContext *pCodecCtx =  avcodec_alloc_context3(pDec);
+    if(pCodecCtx==NULL){
+        fprintf(stderr,"couldn't allocate codec context\n");
+        return -1;
+    }
+    //copy params
+    if(avcodec_parameters_to_context(pCodecCtx,pCodecPar)<0){
+        fprintf(stderr,"couldn't copy codec parameters\n");
+        return -1;
+    }
+    //initialize decoder context to use given decoder
+    if(avcodec_open2(pCodecCtx,pDec,NULL)<0){
+        fprintf(stderr,"couldn't open codec\n");
+        return -1;
+    }
+    //frame 
+    //sets its values to defaults
+    AVFrame *pFrame = av_frame_alloc();
+    if(pFrame==NULL){
+        fprintf(stderr,"couldn't allocate pframe\n");
+        return -1;
+    }
+    //allocating new frame(we will be outputing in rgb format)
+    AVFrame *pFrameRGB = av_frame_alloc();
+    if(pFrameRGB==NULL){
+        fprintf(stderr,"couldn't allocate pframeRGB\n");
+        return -1;
+    }
+    //we need to store raw bytes of the frame
+    uint8_t *buffer = NULL;
+    //number of bytes needed
+    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24,pCodecCtx->width,pCodecCtx->height,1);
+    if(numBytes<0){
+        fprintf(stderr,"couldn't get buffer size\n");
+        return -1;
+    }
+    //allocate the bytes to buffer
+    buffer = (uint8_t *)av_malloc(numBytes*(sizeof(uint8_t)));
+    //fill the frame
+    av_image_fill_arrays(pFrameRGB->data,pFrameRGB->linesize,buffer,AV_PIX_FMT_RGB24,pCodecCtx->width,pCodecCtx->height,1);
 }
