@@ -170,7 +170,7 @@ int main(int argc,char **argv){
     //close codecs
     avcodec_close(pCodecCtx);
     //free params
-    avcodec_parameters_free(pCodecPar);
+    // avcodec_parameters_free(pCodecPar);
     //close format ctx
     avformat_free_context(pFormatCtx);
 }
